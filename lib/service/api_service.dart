@@ -7,7 +7,6 @@ class ApiService {
   static const String _baseUrl = "https://api.tikfetch.xyz/api/video/download";
   static const String _apiKey =
       "tk_FMfTllGYGNbahHnJSWqqYqlzgoSeaBdKyTKxfvFdOIjkARMhIeecmiotYplYFPOy"; // 🔑 put your key here
-  // static const String videoUrl = "https://vt.tiktok.com/ZSD6PeJju/"; // 🔑 put your key here
 
   static Future<TiktokModel?> fetchVideo(String videoUrl) async {
     try {

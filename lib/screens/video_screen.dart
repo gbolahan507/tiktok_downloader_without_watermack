@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:tiktok_downloader2/service/download_service.dart';
+import 'package:provider/provider.dart';
+import 'package:tiktok_downloader2/providers/video_provider.dart';
 import 'package:video_player/video_player.dart';
 
 /// Stateful widget to fetch and then display video content.
 class VideoApp extends StatefulWidget {
-  final String url;
-  final String videoId;
-
-  const VideoApp({super.key, required this.url, required this.videoId});
+  const VideoApp({super.key});
 
   @override
   _VideoAppState createState() => _VideoAppState();
@@ -15,23 +13,26 @@ class VideoApp extends StatefulWidget {
 
 class _VideoAppState extends State<VideoApp> {
   late VideoPlayerController _controller;
-  bool _downloading = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-      ..initialize().then((_) {
-        setState(() {});
-      });
+    final videoProvider = context.read<VideoProvider>();
+    final videoUrl = videoProvider.video?.url;
+
+    if (videoUrl != null) {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl))
+        ..initialize().then((_) {
+          if (mounted) {
+            setState(() {});
+          }
+        });
+    }
   }
 
   Future<void> _downloadVideo() async {
-    setState(() => _downloading = true);
-
-    await DownloadService.saveNetworkImage(widget.url, widget.videoId);
-
-    setState(() => _downloading = false);
+    final videoProvider = context.read<VideoProvider>();
+    await videoProvider.downloadVideo();
   }
 
   @override
@@ -42,11 +43,15 @@ class _VideoAppState extends State<VideoApp> {
         appBar: AppBar(
           title: const Text("Video Preview"),
           actions: [
-            IconButton(
-              icon: _downloading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Icon(Icons.download),
-              onPressed: _downloading ? null : _downloadVideo,
+            Consumer<VideoProvider>(
+              builder: (context, videoProvider, child) {
+                return IconButton(
+                  icon: videoProvider.downloading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Icon(Icons.download),
+                  onPressed: videoProvider.downloading ? null : _downloadVideo,
+                );
+              },
             ),
           ],
         ),
@@ -56,7 +61,7 @@ class _VideoAppState extends State<VideoApp> {
                   aspectRatio: _controller.value.aspectRatio,
                   child: VideoPlayer(_controller),
                 )
-              : Container(),
+              : const CircularProgressIndicator(),
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {

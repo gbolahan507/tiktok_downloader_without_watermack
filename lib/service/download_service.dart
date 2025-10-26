@@ -31,11 +31,9 @@ class DownloadService {
           }
         },
       );
-      print(savePath);
 
       return savePath;
     } catch (e) {
-      print("Download error: $e");
       return null;
     }
   }

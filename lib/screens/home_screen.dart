@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tiktok_downloader2/model/tiktok_model2.dart';
+import 'package:provider/provider.dart';
+import 'package:tiktok_downloader2/providers/video_provider.dart';
 import 'package:tiktok_downloader2/screens/video_screen.dart';
-import 'package:tiktok_downloader2/service/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,31 +12,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
-  TiktokModel? video;
-  bool _loading = false;
 
   Future<void> _getVideo() async {
     if (_controller.text.isEmpty) return;
 
-    setState(() => _loading = true);
+    final videoProvider = context.read<VideoProvider>();
+    await videoProvider.fetchVideo(_controller.text);
 
-    final result = await ApiService.fetchVideo(_controller.text);
-
-    setState(() {
-      video = result;
-      _loading = false;
-    });
-
-    if (video != null && video!.url != null) {
-      // 👇 Navigate to preview
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VideoApp(url: video!.url!, videoId: video!.videoId!),
-        ),
-      );
-    } else {
-      print("Failed to fetch video");
+    if (videoProvider.video != null && videoProvider.video!.url != null) {
+      // Navigate to preview
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const VideoApp(),
+          ),
+        );
+      }
     }
   }
 
@@ -61,7 +53,20 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text("Fetch Video"),
             ),
             const SizedBox(height: 20),
-            if (_loading) const CircularProgressIndicator(),
+            Consumer<VideoProvider>(
+              builder: (context, videoProvider, child) {
+                if (videoProvider.loading) {
+                  return const CircularProgressIndicator();
+                }
+                if (videoProvider.errorMessage != null) {
+                  return Text(
+                    videoProvider.errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ],
         ),
       ),
